@@ -95,6 +95,7 @@ const hfat_cmd_t user_define_at_cmds_table[]=
 {
 	{NULL,NULL,NULL,NULL} //the last item must be null
 };
+#if 0
 static int USER_FUNC socketa_recv_callback(uint32_t event,char *data,uint32_t len,uint32_t buf_len)
 {
 	if(event==HFNET_SOCKETA_DATA_READY)
@@ -119,7 +120,7 @@ static int USER_FUNC socketb_recv_callback(uint32_t event,char *data,uint32_t le
 	return len;
 }
 
-
+#endif
 void app_init(void)
 {
 	u_printf("ex app_init \n");
@@ -207,12 +208,16 @@ static int hfsys_event_callback( uint32_t event_id,void * param)
     return 0; 
 } 
   
+static int USER_FUNC uart_recv_callback(uint32_t event,char *data,uint32_t len,uint32_t buf_len) 
+{ 
+  HF_Debug(DEBUG_LEVEL_USER,"[%d]uart recv %d bytes data %d\n",event,len,buf_len); 
+
+  HF_Moudlefunc(data,len);
+  return len; 
+} 
 
 int USER_FUNC app_main (void)
 {
-	//time_t now=time(NULL);
-	
-	
 	HF_Debug(DEBUG_LEVEL,"sdk version(%s),the app_main start time is %s %s\n",hfsys_get_sdk_version(),__DATE__,__TIME__);
 	HF_Debug(DEBUG_LEVEL_USER,"hello hf\n");
 	if(hfgpio_fmap_check()!=0)
@@ -258,10 +263,11 @@ int USER_FUNC app_main (void)
 		HF_Debug(DEBUG_WARN,"start httpd fail\n");
 	}
 	
-	if(hfnet_start_uart(HFTHREAD_PRIORITIES_LOW,(hfnet_callback_t)NULL)!=HF_SUCCESS)
+	if(hfnet_start_uart(HFTHREAD_PRIORITIES_LOW,(hfnet_callback_t)uart_recv_callback)!=HF_SUCCESS)
 	{
 		HF_Debug(DEBUG_WARN,"start uart fail!\n");
 	}
+	#if 0
 	if(hfnet_start_socketa(HFTHREAD_PRIORITIES_LOW,(hfnet_callback_t)socketa_recv_callback)!=HF_SUCCESS)
 	{
 		HF_Debug(DEBUG_WARN,"start socketa fail\n");
@@ -270,6 +276,7 @@ int USER_FUNC app_main (void)
 	{
 		HF_Debug(DEBUG_WARN,"start socketb fail\n");
 	}
+	#endif
 	if(hfnet_start_httpd(HFTHREAD_PRIORITIES_MID)!=HF_SUCCESS)
 	{
 		HF_Debug(DEBUG_WARN,"start httpd fail\n");

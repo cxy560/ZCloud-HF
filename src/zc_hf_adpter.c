@@ -37,13 +37,21 @@ typedef struct
 HF_TimerInfo g_struHfTimer[ZC_TIMER_MAX_NUM];
 hfthread_mutex_t g_struTimermutex;
 
-
+#define HF_MAX_UARTBUF_LEN   (1000)
 typedef struct 
 {
     u8 u8CloudKey[36];
     u8 u8PrivateKey[112];
     u8 u8DeviciId[ZC_HS_DEVICE_ID_LEN];
 }HF_StaInfo;
+
+typedef struct
+{
+    u32 u32Status;
+    u32 u32RecvLen;
+    u8  u8UartBuffer[HF_MAX_UARTBUF_LEN];
+}HF_UartBuffer;
+
 
 #define DEFAULT_IOT_CLOUD_KEY {\
     0xb0, 0x7e, 0xab, 0x09, \
@@ -100,7 +108,7 @@ HF_StaInfo g_struHfStaInfo = {
     DEFAULT_DEVICIID
 };
 u8 g_u8recvbuffer[1000];
-extern ZC_Timer g_struTimer[ZC_TIMER_MAX_NUM];
+HF_UartBuffer g_struUartBuffer;
 
 /*************************************************
 * Function: HF_timer_callback
@@ -118,17 +126,14 @@ void USER_FUNC HF_timer_callback(hftimer_handle_t htimer)
     if (1 == g_struHfTimer[u8TimeId].u32FirstFlag)
     {
         g_struHfTimer[u8TimeId].u32FirstFlag = 0;
-        ZC_Printf("step 0 timer id = %d type = %d timeout\n", u8TimeId,g_struTimer[u8TimeId].u8Type);
         hftimer_start(htimer);
     }
     else
     {
-        ZC_Printf("step 1 timer id = %d type = %d timeout\n", u8TimeId,g_struTimer[u8TimeId].u8Type);
         TIMER_TimeoutAction(u8TimeId);
         TIMER_StopTimer(u8TimeId);
     }
     
-    ZC_Printf("return form HF_timer_callback\n");
     hfthread_mutext_unlock(g_struTimermutex);
 }
 /*************************************************
@@ -163,7 +168,6 @@ u32 HF_SetTimer(u8 u8Type, u32 u32Interval, u8 *pu8TimeIndex)
     u32Retval = TIMER_FindIdleTimer(&u8TimerIndex);
     if (ZC_RET_OK == u32Retval)
     {
-        ZC_Printf("set timer type = %d, id = %d\n", u8Type, u8TimerIndex);
         TIMER_AllocateTimer(u8Type, u8TimerIndex, (u8*)&g_struHfTimer[u8TimerIndex]);
         g_struHfTimer[u8TimerIndex].struHandle = hftimer_create(NULL,u32Interval,false,u8TimerIndex,
              HF_timer_callback,0);
@@ -260,11 +264,10 @@ u32 HF_FirmwareUpdate(u8 *pu8FileData, u32 u32Offset, u32 u32DataLen)
 u32 HF_SendDataToMoudle(u8 *pu8Data, u16 u16DataLen)
 {
     u8 u8MagicFlag[4] = {0x02,0x03,0x04,0x05};
-    hfuart_handle_t huart1;
-    
-    huart1 = hfuart_open(1); 
-    hfuart_send(huart1,u8MagicFlag,4,1000); 
-    hfuart_send(huart1,pu8Data,u16DataLen,1000); 
+
+    ZC_Printf("send to moudle\n");
+    hfuart_send(HFUART0,u8MagicFlag,4,1000); 
+    hfuart_send(HFUART0,pu8Data,u16DataLen,1000); 
 
     return ZC_RET_OK;
 }
@@ -293,6 +296,7 @@ u32 HF_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
     {
         case ZC_CODE_DESCRIBE:
         {
+            ZC_Printf("recv Moudle ZC_CODE_DESCRIBE data\n");
             pstruRegister = (ZC_RegisterReq *)(pstrMsg + 1);
             //memcpy(IoTpAd.UsrCfg.ProductName, pstruRegister->u8DeviceId, ZC_HS_DEVICE_ID_LEN);
             //memcpy(IoTpAd.UsrCfg.ProductKey, pstruRegister->u8ModuleKey, ZC_MODULE_KEY_LEN);
@@ -392,6 +396,9 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
             {
                 ZC_Printf("recv error, len = %d\n",s32RecvLen);
                 PCT_DisConnectCloud(&g_struProtocolController);
+                
+                g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+                g_struUartBuffer.u32RecvLen = 0;
             }
             
         }
@@ -445,9 +452,8 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
 {
     int fd;
     while(1) 
-    { 
-        fd = g_struProtocolController.struCloudConnection.u32Socket;\
-        
+    {
+        fd = g_struProtocolController.struCloudConnection.u32Socket;
         hfthread_mutext_lock(g_struTimermutex);
         PCT_Run();
         HF_SendDataToCloud(&g_struProtocolController.struCloudConnection);
@@ -455,10 +461,166 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
         {
             close(fd);
             PCT_ReconnectCloud(&g_struProtocolController);
+            g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+            g_struUartBuffer.u32RecvLen = 0;
         }
         hfthread_mutext_unlock(g_struTimermutex);
     } 
 }
+
+/*************************************************
+* Function: HF_AssemblePkt
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+u32 HF_AssemblePkt(u8 *pu8Data, u32 u32DataLen) 
+{
+    ZC_MessageHead *pstruMsg;
+    u8 u8MagicHead[4] = {0x02,0x03,0x04,0x05};
+    u32 u32HeadLen;
+    u32 u32MsgLen;
+
+    u32HeadLen = sizeof(RCTRL_STRU_MSGHEAD) + sizeof(ZC_MessageHead);
+    if (MSG_BUFFER_FULL == g_struUartBuffer.u32Status)
+    {
+        return ZC_RET_ERROR;
+    }
+    
+    if (MSG_BUFFER_IDLE == g_struUartBuffer.u32Status)
+    {
+
+        if (u32DataLen < u32HeadLen)
+        {
+            memcpy(g_struUartBuffer.u8UartBuffer, pu8Data, u32DataLen);
+            g_struUartBuffer.u32Status = MSG_BUFFER_SEGMENT_NOHEAD;
+            g_struUartBuffer.u32RecvLen = u32DataLen;
+        }
+        else
+        {
+            if (0 != memcmp(pu8Data, u8MagicHead, 4))
+            {
+                g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+                g_struUartBuffer.u32RecvLen = 0;
+                return ZC_RET_ERROR;
+            }
+            
+            pstruMsg = (ZC_MessageHead *)(pu8Data + sizeof(RCTRL_STRU_MSGHEAD));
+            u32MsgLen =  ZC_HTONS(pstruMsg->Payloadlen) + sizeof(ZC_MessageHead) + sizeof(RCTRL_STRU_MSGHEAD);
+
+            if (u32MsgLen > HF_MAX_UARTBUF_LEN)
+            {
+                g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+                g_struUartBuffer.u32RecvLen = 0;
+                return ZC_RET_ERROR;
+            }
+
+            if (u32MsgLen <= u32DataLen)
+            {
+                memcpy(g_struUartBuffer.u8UartBuffer, pu8Data, u32MsgLen);
+                g_struUartBuffer.u32Status = MSG_BUFFER_FULL;
+                g_struUartBuffer.u32RecvLen = u32MsgLen;
+            }
+            else
+            {
+                memcpy(g_struUartBuffer.u8UartBuffer, pu8Data, u32DataLen);
+                g_struUartBuffer.u32Status = MSG_BUFFER_SEGMENT_HEAD;
+                g_struUartBuffer.u32RecvLen = u32DataLen;
+            }
+
+        }
+
+        return ZC_RET_OK;
+
+    }
+
+    if (MSG_BUFFER_SEGMENT_HEAD == g_struUartBuffer.u32Status)
+    {
+        pstruMsg = (ZC_MessageHead *)(g_struUartBuffer.u8UartBuffer + sizeof(RCTRL_STRU_MSGHEAD));
+        u32MsgLen = ZC_HTONS(pstruMsg->Payloadlen) + sizeof(ZC_MessageHead) + sizeof(RCTRL_STRU_MSGHEAD);
+
+        if (u32MsgLen <= u32DataLen + g_struUartBuffer.u32RecvLen)
+        {
+            memcpy((g_struUartBuffer.u8UartBuffer + g_struUartBuffer.u32RecvLen), 
+                pu8Data, 
+                (u32MsgLen - g_struUartBuffer.u32RecvLen));
+
+            g_struUartBuffer.u32Status = MSG_BUFFER_FULL;
+            g_struUartBuffer.u32RecvLen = u32MsgLen;
+        }
+        else
+        {
+            memcpy((g_struUartBuffer.u8UartBuffer + g_struUartBuffer.u32RecvLen), 
+                pu8Data, 
+                u32DataLen);
+            g_struUartBuffer.u32RecvLen += u32DataLen;
+            g_struUartBuffer.u32Status = MSG_BUFFER_SEGMENT_HEAD;
+        }
+
+        return ZC_RET_OK;
+    }
+
+    if (MSG_BUFFER_SEGMENT_NOHEAD == g_struUartBuffer.u32Status)
+    {
+        if ((g_struUartBuffer.u32RecvLen + u32DataLen) < u32HeadLen)
+        {
+            memcpy((g_struUartBuffer.u8UartBuffer + g_struUartBuffer.u32RecvLen), 
+                pu8Data,
+                u32DataLen);
+            g_struUartBuffer.u32RecvLen += u32DataLen;
+            g_struUartBuffer.u32Status = MSG_BUFFER_SEGMENT_NOHEAD;
+        }
+        else
+        {
+            memcpy((g_struUartBuffer.u8UartBuffer + g_struUartBuffer.u32RecvLen), 
+                pu8Data,
+                (u32HeadLen - g_struUartBuffer.u32RecvLen));
+
+            if (0 != memcmp(g_struUartBuffer.u8UartBuffer, u8MagicHead, 4))
+            {
+                g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+                g_struUartBuffer.u32RecvLen = 0;
+                return ZC_RET_ERROR;
+            }
+
+            pstruMsg = (ZC_MessageHead *)(g_struUartBuffer.u8UartBuffer + sizeof(RCTRL_STRU_MSGHEAD));
+            u32MsgLen = ZC_HTONS(pstruMsg->Payloadlen) + sizeof(ZC_MessageHead) + sizeof(RCTRL_STRU_MSGHEAD);
+
+            if (u32MsgLen > MSG_BUFFER_MAXLEN)
+            {
+                g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+                g_struUartBuffer.u32RecvLen = 0;                
+                return ZC_RET_ERROR;
+            }
+
+            if (u32MsgLen <= u32DataLen + g_struUartBuffer.u32RecvLen)
+            {
+                memcpy((g_struUartBuffer.u8UartBuffer + g_struUartBuffer.u32RecvLen), 
+                    pu8Data,
+                    u32MsgLen - g_struUartBuffer.u32RecvLen);
+                g_struUartBuffer.u32Status = MSG_BUFFER_FULL;
+                g_struUartBuffer.u32RecvLen = u32MsgLen;
+
+            }
+            else
+            {
+                memcpy((g_struUartBuffer.u8UartBuffer + g_struUartBuffer.u32RecvLen), 
+                    pu8Data,
+                    u32DataLen);
+                g_struUartBuffer.u32Status = MSG_BUFFER_SEGMENT_HEAD;
+                g_struUartBuffer.u32RecvLen += u32DataLen;
+            }
+
+        }
+
+        return ZC_RET_OK;
+
+    }
+    return ZC_RET_ERROR;
+}
+
 /*************************************************
 * Function: HF_Moudlefunc
 * Description: 
@@ -467,41 +629,26 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
 * Parameter: 
 * History:
 *************************************************/
-void HF_Moudlefunc(void* arg) 
-{ 
-    hfuart_handle_t huart1; 
-    char *buf; 
-    int recv_bytes; 
-  
-    huart1 = hfuart_open(1); 
-    if(huart1==NULL) 
-    { 
-        u_printf("open uart1 fail\n"); 
-        goto exit_thread; 
-    } 
-    buf = (char*)hfmem_malloc(1000); 
-    if(buf==NULL) 
-    { 
-        u_printf("memory alloc fail\n"); 
-        goto exit_thread; 
-    } 
-    while(1) 
-    { 
-        recv_bytes = hfuart_recv(huart1,buf,1000,1000); 
-        if(recv_bytes>0) 
-        { 
-            HF_RecvDataFromMoudle(buf, recv_bytes);        
-        } 
-    } 
-  
-exit_thread: 
-    if(buf!=NULL) 
-    { 
-        hfmem_free(buf); 
-    } 
-    hfuart_close(huart1); 
-    hfthread_destroy(NULL); 
-    return ; 
+void HF_Moudlefunc(u8 *pu8Data, u32 u32DataLen) 
+{
+    u32 u32RetVal;
+
+    u32RetVal = HF_AssemblePkt(pu8Data, u32DataLen);
+
+    if (ZC_RET_ERROR == u32RetVal)
+    {
+        return;
+    }
+
+    if (MSG_BUFFER_FULL == g_struUartBuffer.u32Status)
+    {
+        HF_RecvDataFromMoudle(g_struUartBuffer.u8UartBuffer + sizeof(RCTRL_STRU_MSGHEAD), 
+            g_struUartBuffer.u32RecvLen - sizeof(RCTRL_STRU_MSGHEAD));
+        g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+        g_struUartBuffer.u32RecvLen = 0;
+    }
+
+    return; 
 }
 /*************************************************
 * Function: HF_Init
@@ -526,6 +673,10 @@ void HF_Init()
     g_struHfAdapter.pfunSetTimer = HF_SetTimer;   
     g_u16TcpMss = 1000;
     PCT_Init(&g_struHfAdapter);
+
+    g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+    g_struUartBuffer.u32RecvLen = 0;
+
     hfthread_create(HF_Cloudfunc,"HF_Cloudfunc",256,NULL,HFTHREAD_PRIORITIES_LOW,NULL,NULL); 
     hfthread_create(HF_CloudRecvfunc,"HF_CloudRecvfunc",256,NULL,HFTHREAD_PRIORITIES_LOW,NULL,NULL); 
     hfthread_mutext_new(&g_struTimermutex);
@@ -554,6 +705,9 @@ void HF_WakeUp()
 void HF_Sleep()
 {
     PCT_Sleep();
+    
+    g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
+    g_struUartBuffer.u32RecvLen = 0;
 }
 
 /******************************* FILE END ***********************************/
