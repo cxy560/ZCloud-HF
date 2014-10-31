@@ -1,6 +1,6 @@
 /**
 ******************************************************************************
-* @file     MT7681Adapter.c
+* @file     zc_hf_adpter.c
 * @authors  cxy
 * @version  V1.0.0
 * @date     10-Sep-2014
@@ -11,6 +11,7 @@
 #include <zc_timer.h>
 #include <zc_module_interface.h>
 #include <hsf.h>
+#include <zc_hf_adpter.h>
 
 extern PTC_ProtocolCon  g_struProtocolController;
 PTC_ModuleAdapter g_struHfAdapter;
@@ -28,78 +29,6 @@ u8 g_u8CiperBuffer[MSG_CIPER_BUFFER_MAXLEN];
 
 u16 g_u16TcpMss;
 u16 g_u16LocalPort;
-typedef struct 
-{
-    u32 u32FirstFlag;
-    hftimer_handle_t struHandle;
-}HF_TimerInfo;
-
-HF_TimerInfo g_struHfTimer[ZC_TIMER_MAX_NUM];
-hfthread_mutex_t g_struTimermutex;
-
-#define HF_MAX_UARTBUF_LEN   (1000)
-typedef struct 
-{
-    u8 u8CloudKey[36];
-    u8 u8PrivateKey[112];
-    u8 u8DeviciId[ZC_HS_DEVICE_ID_LEN];
-}HF_StaInfo;
-
-typedef struct
-{
-    u32 u32Status;
-    u32 u32RecvLen;
-    u8  u8UartBuffer[HF_MAX_UARTBUF_LEN];
-}HF_UartBuffer;
-
-
-#define DEFAULT_IOT_CLOUD_KEY {\
-    0xb0, 0x7e, 0xab, 0x09, \
-    0x73, 0x4e, 0x78, 0x12, \
-    0x7e, 0x8c, 0x54, 0xcd, \
-    0xbb, 0x93, 0x3c, 0x16, \
-    0x96, 0x23, 0xaf, 0x7a, \
-    0xfc, 0xd2, 0x8b, 0xd1, \
-    0x43, 0xa2, 0xbb, 0xc8, \
-    0x77, 0xa0, 0xca, 0xcd, \
-    0x01, 0x00, 0x01\
-}
-
-#define DEFAULT_IOT_PRIVATE_KEY {\
-    0xb0, 0x7e, 0xab, 0x09, \
-    0x73, 0x4e, 0x78, 0x12, \
-    0x7e, 0x8c, 0x54, 0xcd, \
-    0xbb, 0x93, 0x3c, 0x16, \
-    0x96, 0x23, 0xaf, 0x7a, \
-    0xfc, 0xd2, 0x8b, 0xd1, \
-    0x43, 0xa2, 0xbb, 0xc8, \
-    0x77, 0xa0, 0xca, 0xcd, \
-    0xef, 0x28, 0x66, 0xbd, \
-    0x44, 0xc1, 0x27, 0x58, \
-    0x3f, 0x71, 0xe3, 0x03, \
-    0xcf, 0x11, 0x69, 0xf1, \
-    0xbc, 0xec, 0x8f, 0xcd, \
-    0xb5, 0x88, 0xab, 0x50, \
-    0x5d, 0xb3, 0xf1, 0xd3, \
-    0xbb, 0x9d, 0xf2, 0x9d, \
-    0xcd, 0x04, 0xff, 0x7e, \
-    0x45, 0x90, 0xa8, 0x1f, \
-    0xf8, 0xd3, 0xb2, 0xdf, \
-    0x33, 0x06, 0x24, 0xa1, \
-    0x93, 0x57, 0x4b, 0xaf, \
-    0xfb, 0x6c, 0x63, 0x6f, \
-    0x82, 0x24, 0xdc, 0xed, \
-    0x6c, 0xdd, 0x7a, 0x61, \
-    0x9a, 0xd2, 0x29, 0x32, \
-    0xdc, 0x4a, 0x86, 0x20, \
-    0x6c, 0x98, 0x16, 0xce, \
-    0xfd, 0x31, 0x50, 0xd6\
-}
-
-#define DEFAULT_DEVICIID {\
-    'z', 'z', 'z', 'z',\
-    'z', 'z', 'z', 'z'\
-}
 
 
 HF_StaInfo g_struHfStaInfo = {
@@ -107,8 +36,10 @@ HF_StaInfo g_struHfStaInfo = {
     DEFAULT_IOT_PRIVATE_KEY,
     DEFAULT_DEVICIID
 };
-u8 g_u8recvbuffer[1000];
+u8 g_u8recvbuffer[HF_MAX_SOCKET_LEN];
 HF_UartBuffer g_struUartBuffer;
+HF_TimerInfo g_struHfTimer[ZC_TIMER_MAX_NUM];
+hfthread_mutex_t g_struTimermutex;
 
 /*************************************************
 * Function: HF_timer_callback
@@ -151,7 +82,7 @@ void HF_StopTimer(u8 u8TimerIndex)
 }
 
 /*************************************************
-* Function: MT_SetTimer
+* Function: HF_SetTimer
 * Description: 
 * Author: cxy 
 * Returns: 
@@ -162,7 +93,6 @@ u32 HF_SetTimer(u8 u8Type, u32 u32Interval, u8 *pu8TimeIndex)
 {
     u8 u8TimerIndex;
     u32 u32Retval;
-    hftimer_handle_t timer=NULL;
 
 
     u32Retval = TIMER_FindIdleTimer(&u8TimerIndex);
@@ -264,11 +194,12 @@ u32 HF_FirmwareUpdate(u8 *pu8FileData, u32 u32Offset, u32 u32DataLen)
 u32 HF_SendDataToMoudle(u8 *pu8Data, u16 u16DataLen)
 {
     u8 u8MagicFlag[4] = {0x02,0x03,0x04,0x05};
-
-    ZC_Printf("send to moudle\n");
-    hfuart_send(HFUART0,u8MagicFlag,4,1000); 
-    hfuart_send(HFUART0,pu8Data,u16DataLen,1000); 
-
+    if (PCT_EQ_STATUS_ON == g_struProtocolController.u8EqStart)
+    {
+        ZC_Printf("send to moudle\n");
+        hfuart_send(HFUART0,(char*)u8MagicFlag,4,1000); 
+        hfuart_send(HFUART0,(char*)pu8Data,u16DataLen,1000); 
+    }
     return ZC_RET_OK;
 }
 /*************************************************
@@ -298,8 +229,9 @@ u32 HF_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
         {
             ZC_Printf("recv Moudle ZC_CODE_DESCRIBE data\n");
             pstruRegister = (ZC_RegisterReq *)(pstrMsg + 1);
-            //memcpy(IoTpAd.UsrCfg.ProductName, pstruRegister->u8DeviceId, ZC_HS_DEVICE_ID_LEN);
-            //memcpy(IoTpAd.UsrCfg.ProductKey, pstruRegister->u8ModuleKey, ZC_MODULE_KEY_LEN);
+            memcpy(g_struHfStaInfo.u8PrivateKey, pstruRegister->u8ModuleKey, ZC_MODULE_KEY_LEN);
+            memcpy(g_struHfStaInfo.u8DeviciId, (u8*)(pstruRegister+1)+sizeof(ZC_MessageOptHead), ZC_HS_DEVICE_ID_LEN);
+            memcpy(g_struHfStaInfo.u8DeviciId + ZC_HS_DEVICE_ID_LEN, pstruRegister->u8Domain, ZC_DOMAIN_LEN);
             g_struProtocolController.u8MainState = PCT_STATE_ACCESS_NET; 
             if (PCT_TIMER_INVAILD != g_struProtocolController.u8RegisterTimer)
             {
@@ -385,7 +317,7 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
         if ((g_struProtocolController.u8MainState >= PCT_STATE_WAIT_ACCESSRSP) 
         && (g_struProtocolController.u8MainState < PCT_STATE_DISCONNECT_CLOUD))
         {
-            s32RecvLen = recv(g_struProtocolController.struCloudConnection.u32Socket, g_u8recvbuffer, 1000, 0); 
+            s32RecvLen = recv(g_struProtocolController.struCloudConnection.u32Socket, g_u8recvbuffer, HF_MAX_SOCKET_LEN, 0); 
 
             if(s32RecvLen > 0) 
             {
@@ -416,27 +348,26 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
 *************************************************/
 u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
 {
-	int fd;	
-	int tmp=1;
-	struct sockaddr_in addr;
-	
-	memset((char*)&addr,0,sizeof(addr));
-	
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(8384);
-	addr.sin_addr.s_addr=inet_addr("192.168.1.111");
-	fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(fd<0)
-		return -1;
-	
-	if (connect(fd, (struct sockaddr *)&addr, sizeof(addr))< 0)
-	{
-		close(fd);
-		return -1;
-	}
+    int fd; 
+    struct sockaddr_in addr;
+    
+    memset((char*)&addr,0,sizeof(addr));
+    
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(8384);
+    addr.sin_addr.s_addr=inet_addr("192.168.1.111");
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(fd<0)
+        return ZC_RET_ERROR;
+    
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr))< 0)
+    {
+        close(fd);
+        return ZC_RET_ERROR;
+    }
 
-	ZC_Printf("connect ok!\n");
-	g_struProtocolController.struCloudConnection.u32Socket = fd;
+    ZC_Printf("connect ok!\n");
+    g_struProtocolController.struCloudConnection.u32Socket = fd;
 
     return ZC_RET_OK;
 }

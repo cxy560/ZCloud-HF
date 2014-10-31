@@ -89,6 +89,7 @@ void PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     g_struProtocolController.u8RegisterTimer = PCT_TIMER_INVAILD;
 
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
+    g_struProtocolController.u8EqStart = PCT_EQ_STATUS_OFF;
     
     g_struProtocolController.struOtaInfo.u8NeedReset = PCT_OTA_REST_OFF;    
 }
@@ -104,8 +105,6 @@ void PCT_SendEmptyMsg(u8 u8MsgId, u8 u8SecType)
 {
     ZC_MessageHead struMsg;
     ZC_SecHead struSecHead;
-    u32 u32RetVal;
-    
     u16 u16Len = 0;
     /*build msg*/
     EVENT_BuildEmptyMsg(u8MsgId, (u8*)&struMsg, &u16Len);
@@ -115,7 +114,7 @@ void PCT_SendEmptyMsg(u8 u8MsgId, u8 u8SecType)
     struSecHead.u16TotalMsg = ZC_HTONS(u16Len);
 
     
-    u32RetVal = PCT_SendMsgToCloud(&struSecHead, (u8*)&struMsg);
+    (void)PCT_SendMsgToCloud(&struSecHead, (u8*)&struMsg);
 }
 /*************************************************
 * Function: PCT_SendErrorMsg
@@ -167,7 +166,8 @@ void PCT_SendCloudAccessMsg1(PTC_ProtocolCon *pstruContoller)
     pstruContoller->pstruMoudleFun->pfunGetDeviceId(&pu8DeviceId);
     
     memcpy(struMsg1.RandMsg, pstruContoller->RandMsg, ZC_HS_MSG_LEN);
-    memcpy(struMsg1.DeviceId, /*pu8DeviceId*/"zzzzzzzzzzzz", ZC_HS_DEVICE_ID_LEN);
+    memcpy(struMsg1.DeviceId, pu8DeviceId, ZC_HS_DEVICE_ID_LEN);
+    memcpy(struMsg1.u8Domain, pu8DeviceId + ZC_HS_DEVICE_ID_LEN, ZC_DOMAIN_LEN);
 
    
     EVENT_BuildMsg(ZC_CODE_HANDSHAKE_1, 1, g_u8MsgBuildBuffer, &u16Len, 
@@ -797,6 +797,7 @@ void PCT_WakeUp()
             PCT_TIMER_INTERVAL_REGISTER, &g_struProtocolController.u8RegisterTimer);
         /*Intial Bc send Num*/
         g_struProtocolController.u16SendBcNum = 0;
+
         PCT_SendNotifyMsg(ZC_CODE_WIFI_CONNECT);
     }
     

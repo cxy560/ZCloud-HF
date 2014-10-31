@@ -12,10 +12,11 @@
 #include <zc_common.h>
 
 #define ZC_HS_MSG_LEN                       (40)
-#define ZC_HS_DEVICE_ID_LEN                 (12)
+#define ZC_HS_DEVICE_ID_LEN                 (8)
 #define ZC_HS_SESSION_KEY_LEN               (16)
 #define ZC_HS_SESSION_IV_LEN                (16)
 #define ZC_MODULE_KEY_LEN                   (112)
+#define ZC_DOMAIN_LEN                       (8)
 
 
 #define ZC_SEC_ALG_NONE                     (0) 
@@ -43,7 +44,7 @@ typedef struct
 {
     u8  Version;
     u8  MsgId;
-    u8  MsgCode;		
+    u8  MsgCode;
     u8  OptNum;        
     
     u16 Payloadlen;     //msg payload len + opt len + opt head len
@@ -63,8 +64,8 @@ typedef struct
 /*ZCloud Message code*/
 typedef enum 
 {
-    ZC_CODE_SMARTCONFIG_BEGIN = 0,
-    ZC_CODE_SMARTCONFIG_DONE,
+    ZC_CODE_EQ_BEGIN = 0,
+    ZC_CODE_EQ_DONE,
     ZC_CODE_WIFI_CONNECT,
     ZC_CODE_WIFI_DISCONNECT,
     ZC_CODE_CLOUD_CONNECT,
@@ -123,6 +124,7 @@ typedef struct
 {
     u8 RandMsg[ZC_HS_MSG_LEN];
     u8 DeviceId[ZC_HS_DEVICE_ID_LEN];
+    u8 u8Domain[ZC_DOMAIN_LEN];
 }ZC_HandShakeMsg1;
 
 /*Second handshake msg, send by cloud to moudle, 
@@ -151,14 +153,14 @@ typedef struct
 /*msg code: ZC_CODE_DESCRIBE*/
 typedef struct 
 {
-	u8	u8WifiSwVersion;            
-	u8	u8HwVersion;              
-	u8	u8ArmSwVersion;          
-	u8	u8ZigbeeSwVersion;       
+    u8  u8WifiSwVersion;            
+    u8  u8HwVersion;              
+    u8  u8ArmSwVersion;          
+    u8  u8ZigbeeSwVersion;       
     u8  u8ModuleKey[ZC_MODULE_KEY_LEN];
-    u8  u8DeviceId[ZC_HS_DEVICE_ID_LEN];
-    
+    u8  u8Domain[ZC_DOMAIN_LEN];
 }ZC_RegisterReq;
+
 
 /*msg code: ZC_CODE_OTA_BEGIN*/
 typedef struct

@@ -377,8 +377,6 @@ cleanup:
 	return (ret);
 }
 #endif
-
-
 /*
  * Import X from unsigned binary data, big endian
  */

@@ -223,10 +223,10 @@ u32 SEC_AesEncrypt(u8* pu8CiperBuf, u8 *pu8Plainbuf, u16 u16Len, u16 *pu16CiperL
         return ZC_RET_ERROR;            
     }
     
-    //AES_CBC_Encrypt(pu8Plainbuf, u16Len, 
-    //    pstruCon->u8SessionKey, ZC_HS_SESSION_KEY_LEN, 
-    //    pstruCon->IvSend, 16, 
-    //    pu8CiperBuf, &u32OutLen);
+    AES_CBC_Encrypt(pu8Plainbuf, u16Len, 
+        pstruCon->u8SessionKey, ZC_HS_SESSION_KEY_LEN, 
+        pstruCon->IvSend, 16, 
+        pu8CiperBuf, &u32OutLen);
     *pu16CiperLen = (u16)u32OutLen;  
     //memcpy(pstruCon->IvSend, pu8CiperBuf, 16);
     return ZC_RET_OK;
@@ -270,7 +270,7 @@ u32 SEC_AesDecrypt(u8* pu8CiperBuf, u8 *pu8Plainbuf, u16 u16Len, u16 *pu16PlainL
         memset(u8NextIv + u16Len, 0, 16 - u16Len);
     }
 #endif    
-    //AES_CBC_Decrypt(pu8CiperBuf, u16Len, pu8Key, ZC_HS_SESSION_KEY_LEN, pu8IvRecv, 16, pu8Plainbuf, &u32OutLen);
+    AES_CBC_Decrypt(pu8CiperBuf, u16Len, pu8Key, ZC_HS_SESSION_KEY_LEN, pu8IvRecv, 16, pu8Plainbuf, &u32OutLen);
     *pu16PlainLen = (u16)u32OutLen;
     //memcpy(pstruCon->IvRecv, u8NextIv, 16);
     return ZC_RET_OK;

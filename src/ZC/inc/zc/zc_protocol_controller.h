@@ -53,6 +53,10 @@
 #define    PCT_OTA_REST_ON       (1)
 #define    PCT_OTA_REST_OFF       (0)
 
+#define    PCT_EQ_STATUS_ON        (1)
+#define    PCT_EQ_STATUS_OFF       (0)
+
+
 
 typedef struct
 {
@@ -124,7 +128,8 @@ typedef struct
     u8   RandMsg[ZC_HS_MSG_LEN];
 
     u16   u16SendBcNum;
-    u8   u8Pad[2];
+    u8    u8EqStart;
+    u8    u8Pad;
     PTC_ModuleAdapter *pstruMoudleFun;      /*Communication With Cloud*/
     PTC_OtaInfo struOtaInfo;
     
@@ -147,7 +152,7 @@ extern u32 g_u32SecSwitch;
 extern "C" {
 #endif
 void PCT_SendNotifyMsg(u8 u8NotifyCode);
-void PCT_SendHeartMsg();
+void PCT_SendHeartMsg(void);
 void PCT_Init(PTC_ModuleAdapter *pstruAdapter);
 void PCT_SendEmptyMsg(u8 u8MsgId, u8 u8SecType);
 void PCT_SendErrorMsg(u8 u8MsgId, u8 *pu8Error, u16 u16ErrorLen);
@@ -161,9 +166,9 @@ void PCT_HandleMoudleEvent(u8 *pu8Msg, u16 u16DataLen);
 void PCT_RecvAccessMsg2(PTC_ProtocolCon *pstruContoller);
 void PCT_RecvAccessMsg4(PTC_ProtocolCon *pstruContoller);
 void PCT_HandleEvent(PTC_ProtocolCon *pstruContoller);
-void PCT_Run();
-void PCT_WakeUp();
-void PCT_Sleep();
+void PCT_Run(void);
+void PCT_WakeUp(void);
+void PCT_Sleep(void);
 u32 PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData);
 
 #ifdef __cplusplus
