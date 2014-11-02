@@ -29,6 +29,7 @@ typedef struct
     u8 u8CloudKey[36];
     u8 u8PrivateKey[112];
     u8 u8DeviciId[ZC_HS_DEVICE_ID_LEN + ZC_DOMAIN_LEN];
+    u8 u8CloudAddr[20];
 }HF_StaInfo;
 
 typedef struct

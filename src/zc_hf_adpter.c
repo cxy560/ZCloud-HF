@@ -34,7 +34,8 @@ u16 g_u16LocalPort;
 HF_StaInfo g_struHfStaInfo = {
     DEFAULT_IOT_CLOUD_KEY,
     DEFAULT_IOT_PRIVATE_KEY,
-    DEFAULT_DEVICIID
+    DEFAULT_DEVICIID,
+    "www.baidu.com"
 };
 u8 g_u8recvbuffer[HF_MAX_SOCKET_LEN];
 HF_UartBuffer g_struUartBuffer;
@@ -351,13 +352,25 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
 {
     int fd; 
     struct sockaddr_in addr;
+    struct ip_addr struIp;
+    int retval;
     
     memset((char*)&addr,0,sizeof(addr));
+    
+    retval = hfnet_gethostbyname((const char*)g_struHfStaInfo.u8CloudAddr, &struIp);
+    if (HF_SUCCESS != retval)
+    {
+        return ZC_RET_ERROR;
+    }
+    
+    ZC_Printf("0x%x\n", struIp.addr);
     
     addr.sin_family = AF_INET;
     addr.sin_port = htons(8384);
     addr.sin_addr.s_addr=inet_addr("192.168.1.111");
     fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    ZC_Printf("0x%x\n", addr.sin_addr.s_addr);
     if(fd<0)
         return ZC_RET_ERROR;
     
@@ -448,13 +461,16 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
         fd = g_struProtocolController.struCloudConnection.u32Socket;
         hfthread_mutext_lock(g_struTimermutex);
         PCT_Run();
-        HF_SendDataToCloud(&g_struProtocolController.struCloudConnection);
         if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
         {
             close(fd);
             PCT_ReconnectCloud(&g_struProtocolController);
             g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
             g_struUartBuffer.u32RecvLen = 0;
+        }
+        else
+        {
+            HF_SendDataToCloud(&g_struProtocolController.struCloudConnection);
         }
         HF_SendBc();
         hfthread_mutext_unlock(g_struTimermutex);
