@@ -40,6 +40,7 @@ u8 g_u8recvbuffer[HF_MAX_SOCKET_LEN];
 HF_UartBuffer g_struUartBuffer;
 HF_TimerInfo g_struHfTimer[ZC_TIMER_MAX_NUM];
 hfthread_mutex_t g_struTimermutex;
+int g_Bcfd;
 
 /*************************************************
 * Function: HF_timer_callback
@@ -372,6 +373,65 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     return ZC_RET_OK;
 }
 /*************************************************
+* Function: HF_BcInit
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void HF_BcInit()
+{
+    int tmp=1;
+
+    g_Bcfd = socket(AF_INET, SOCK_DGRAM, 0); 
+
+    tmp=1; 
+    setsockopt(g_Bcfd, SOL_SOCKET,SO_BROADCAST,&tmp,sizeof(tmp)); 
+    
+    return;
+}
+/*************************************************
+* Function: HF_SendBc
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void HF_SendBc()
+{
+    struct sockaddr_in addr;
+    u16 u16Len;
+    static int sleepcount = 0;
+    
+    if (PCT_STATE_CONNECT_CLOUD != g_struProtocolController.u8MainState)
+    {
+        sleepcount = 0;
+        return;
+    }
+    sleepcount++;
+    if (sleepcount > 250000)
+    {
+        memset((char*)&addr,0,sizeof(addr));
+        addr.sin_family = AF_INET; 
+        addr.sin_port = htons(ZC_MOUDLE_BROADCAST_PORT); 
+        addr.sin_addr.s_addr=inet_addr("255.255.255.255"); 
+        
+
+        EVENT_BuildBcMsg(g_u8MsgBuildBuffer, &u16Len);
+
+        if (g_struProtocolController.u16SendBcNum < (PCT_SEND_BC_MAX_NUM / 2))
+        {
+            sendto(g_Bcfd,g_u8MsgBuildBuffer,u16Len,0,(struct sockaddr *)&addr,sizeof(addr)); 
+           g_struProtocolController.u16SendBcNum++;
+        }
+        sleepcount = 0;
+    }
+    
+}
+
+/*************************************************
 * Function: HF_Cloudfunc
 * Description: 
 * Author: cxy 
@@ -382,6 +442,7 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
 USER_FUNC static void HF_Cloudfunc(void* arg) 
 {
     int fd;
+    HF_BcInit();
     while(1) 
     {
         fd = g_struProtocolController.struCloudConnection.u32Socket;
@@ -395,6 +456,7 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
             g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
             g_struUartBuffer.u32RecvLen = 0;
         }
+        HF_SendBc();
         hfthread_mutext_unlock(g_struTimermutex);
     } 
 }
@@ -551,7 +613,6 @@ u32 HF_AssemblePkt(u8 *pu8Data, u32 u32DataLen)
     }
     return ZC_RET_ERROR;
 }
-
 /*************************************************
 * Function: HF_Moudlefunc
 * Description: 
