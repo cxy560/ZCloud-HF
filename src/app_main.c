@@ -125,7 +125,6 @@ static int USER_FUNC socketb_recv_callback(uint32_t event,char *data,uint32_t le
 void app_init(void)
 {
     u_printf("ex app_init \n");
-    
     HF_Debug(DEBUG_LEVEL_USER,"app init\n");
     //HF_Init();
     //hfsmtlk_enable_recv_data_from_router(0);

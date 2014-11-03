@@ -171,6 +171,27 @@ void HF_RecvDataFromCloud(u8 *pu8Data, u32 u32DataLen)
     
     return;
 }
+/*************************************************
+* Function: HF_FirmwareUpdateFinish
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+u32 HF_FirmwareUpdateFinish(u32 u32TotalLen)
+{
+    int retval;
+    retval = hfupdate_complete(HFUPDATE_SW, u32TotalLen);
+    if (HF_SUCCESS == retval)
+    {
+        return ZC_RET_OK;
+    }
+    else
+    {
+        return ZC_RET_ERROR;    
+    }
+}
 
 
 /*************************************************
@@ -183,6 +204,18 @@ void HF_RecvDataFromCloud(u8 *pu8Data, u32 u32DataLen)
 *************************************************/
 u32 HF_FirmwareUpdate(u8 *pu8FileData, u32 u32Offset, u32 u32DataLen)
 {
+    int retval;
+    if (0 == u32Offset)
+    {
+        hfupdate_start(HFUPDATE_SW);
+    }
+    
+    retval = hfupdate_write_file(HFUPDATE_SW, u32Offset, (char *)pu8FileData, u32DataLen); 
+    if (retval < 0)
+    {
+        return ZC_RET_ERROR;
+    }
+    
     return ZC_RET_OK;
 }
 /*************************************************
