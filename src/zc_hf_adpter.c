@@ -703,15 +703,18 @@ void HF_Init()
 {
     ZC_Printf("MT Init\n");
     g_struHfAdapter.pfunConnectToCloud = HF_ConnectToCloud;
-    g_struHfAdapter.pfunSendToCloud = HF_SendDataToCloud;   
-    g_struHfAdapter.pfunUpdate = HF_FirmwareUpdate;        
+    //g_struHfAdapter.pfunSendToCloud = HF_SendDataToCloud;   
+    g_struHfAdapter.pfunUpdate = HF_FirmwareUpdate;     
+    g_struHfAdapter.pfunUpdateFinish = HF_FirmwareUpdateFinish;
     g_struHfAdapter.pfunSendToMoudle = HF_SendDataToMoudle;  
-    g_struHfAdapter.pfunRecvFormMoudle = HF_RecvDataFromMoudle;
+    //g_struHfAdapter.pfunRecvFormMoudle = HF_RecvDataFromMoudle;
     g_struHfAdapter.pfunGetCloudKey = HF_GetCloudKey;   
     g_struHfAdapter.pfunGetPrivateKey = HF_GetPrivateKey; 
     g_struHfAdapter.pfunGetVersion = HF_GetVersion;    
     g_struHfAdapter.pfunGetDeviceId = HF_GetDeviceId;   
     g_struHfAdapter.pfunSetTimer = HF_SetTimer;   
+    g_struHfAdapter.pfunStopTimer = HF_StopTimer;
+    
     g_u16TcpMss = 1000;
     PCT_Init(&g_struHfAdapter);
 

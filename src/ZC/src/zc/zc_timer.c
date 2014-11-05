@@ -127,7 +127,7 @@ void TIMER_TimeoutAction(u8 u8TimerIndex)
 void TIMER_StopTimer(u8 u8TimerIndex)
 {
     g_struTimer[u8TimerIndex].u8Status = ZC_TIMER_STATUS_IDLE;
-    HF_StopTimer(u8TimerIndex);
+    g_struProtocolController.pstruMoudleFun->pfunStopTimer(u8TimerIndex);
 }
 
 

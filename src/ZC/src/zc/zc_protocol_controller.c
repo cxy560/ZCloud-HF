@@ -616,6 +616,7 @@ void PCT_HandleOtaFileEndMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruB
 {
     ZC_MessageHead *pstruMsg;
     ZC_Printf("Ota File End\n");
+    pstruContoller->pstruMoudleFun->pfunUpdateFinish(pstruContoller->struOtaInfo.u32TotalLen);
 
     pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
     PCT_SendAckToCloud(pstruMsg->MsgId);
