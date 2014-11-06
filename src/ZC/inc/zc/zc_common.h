@@ -12,7 +12,8 @@
 #define  __ZC_COMMON_H__
 
 #include <string.h>
-#include <hsf.h>
+#include <zc_module_config.h>
+
 typedef signed   char                       s8;                                 
 typedef signed   short                      s16;                                
 typedef signed   int                        s32;                                
@@ -24,7 +25,11 @@ typedef volatile signed short               vs16;
 typedef volatile signed int                 vs32;                               
 typedef volatile unsigned char              vu8;                                
 typedef volatile unsigned short             vu16;                               
-typedef volatile unsigned int               vu32;               
+typedef volatile unsigned int               vu32;      
+
+#define     ZC_CLOUD_PORT                                    (8384)
+#define     ZC_MOUDLE_PORT                                   (7689)
+#define     ZC_MOUDLE_BROADCAST_PORT                         (8689)
 
 
 #define  ZC_IPADDR_MAX_LEN                  (16)
@@ -56,19 +61,7 @@ typedef volatile unsigned int               vu32;
 
 
 
-#if ZC_DEBUG
-#ifdef ZC_OFF_LINETEST
-#define ZC_Printf(format, ...) printf("\1\2\3\4"format"File:%s, Line:%d, Function:%s\n", ##__VA_ARGS__, __FILE__, __LINE__ , __FUNCTION__)
-#else
-#define ZC_Printf(format, ...) u_printf("\1\2\3\4"format"File:%s, Line:%d, Function:%s\n", ##__VA_ARGS__, __FILE__, __LINE__ , __FUNCTION__)
-#endif 
-#else
-#ifdef ZC_OFF_LINETEST
-#define ZC_Printf(format, ...) printf("\1\2\3\4"format"", ##__VA_ARGS__)
-#else
-#define ZC_Printf(format, ...) HF_Debug(DEBUG_LEVEL_USER, "\1\2\3\4"format"", ##__VA_ARGS__)
-#endif 
-#endif
+
 
 #ifdef __cplusplus
 extern "C" {

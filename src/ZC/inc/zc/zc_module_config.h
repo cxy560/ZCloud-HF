@@ -10,18 +10,26 @@
 #ifndef  __ZC_MOUDLE_CONFIG_H__ 
 #define  __ZC_MOUDLE_CONFIG_H__
 
-#include <zc_common.h>
+#include <hsf.h>
+#if ZC_DEBUG
+#ifdef ZC_OFF_LINETEST
+#define ZC_Printf(format, ...) printf("\1\2\3\4"format"File:%s, Line:%d, Function:%s\n", ##__VA_ARGS__, __FILE__, __LINE__ , __FUNCTION__)
+#else
+#define ZC_Printf(format, ...) Printf_High("\1\2\3\4"format"File:%s, Line:%d, Function:%s\n", ##__VA_ARGS__, __FILE__, __LINE__ , __FUNCTION__)
+#endif 
+#else
+#ifdef ZC_OFF_LINETEST
+#define ZC_Printf(format, ...) printf(""format"", ##__VA_ARGS__)
+#else
+#define ZC_Printf(format, ...) HF_Debug(DEBUG_LEVEL_USER, "\1\2\3\4"format"", ##__VA_ARGS__)
+#endif 
+#endif
 
-#define     ZC_DEVICE_ID_MAX_LEN                            (12)
-#define     ZC_FIRMWARE_VER_MAX_LEN                         (8)
 
-#define     ZC_CLOUD_PUBLIC_KEY_LEN                         (132)
-#define     ZC_MOUDLE_PRIVATE_KEY_LEN                       (448)   
+#define ZC_malloc  hfmem_malloc
+#define ZC_free    hfmem_free
 
 
-#define     ZC_CLOUD_PORT                                    (8384)
-#define     ZC_MOUDLE_PORT                                   (7689)
-#define     ZC_MOUDLE_BROADCAST_PORT                         (8689)
 #endif
 /******************************* FILE END ***********************************/
 
