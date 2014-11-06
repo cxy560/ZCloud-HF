@@ -12,7 +12,7 @@
 #include <zc_protocol_controller.h>
 #include <zc_sec_engine.h>
 
-u32 g_u32TraceSwitch = 1;
+u32 g_u32TraceSwitch = 0;
 u32  g_u32LoopFlag = 0;
 u32  g_u32SecSwitch = 0;
 

@@ -191,7 +191,7 @@ static int hfsys_event_callback( uint32_t event_id,void * param)
         { 
             uint32_t *p_ip; 
             p_ip = (uint32_t*)param; 
-            u_printf("dhcp ok %08X!\n",*p_ip); 
+            u_printf("dhcp gdfgok %08X!\n",*p_ip); 
             HF_WakeUp();
         } 
             break; 
