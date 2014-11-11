@@ -229,12 +229,8 @@ u32 HF_FirmwareUpdate(u8 *pu8FileData, u32 u32Offset, u32 u32DataLen)
 u32 HF_SendDataToMoudle(u8 *pu8Data, u16 u16DataLen)
 {
     u8 u8MagicFlag[4] = {0x02,0x03,0x04,0x05};
-    if (PCT_EQ_STATUS_ON == g_struProtocolController.u8EqStart)
-    {
-        ZC_Printf("send to moudle\n");
-        hfuart_send(HFUART0,(char*)u8MagicFlag,4,1000); 
-        hfuart_send(HFUART0,(char*)pu8Data,u16DataLen,1000); 
-    }
+    hfuart_send(HFUART0,(char*)u8MagicFlag,4,1000); 
+    hfuart_send(HFUART0,(char*)pu8Data,u16DataLen,1000); 
     return ZC_RET_OK;
 }
 /*************************************************
@@ -249,7 +245,8 @@ u32 HF_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
 {
     ZC_MessageHead *pstrMsg;
     ZC_RegisterReq *pstruRegister;
-
+    ZC_MessageOptHead *pstruOpt;
+    
     ZC_TraceData(pu8Data, u16DataLen);
 
     if (0 == u16DataLen)
@@ -262,12 +259,26 @@ u32 HF_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
     {
         case ZC_CODE_DESCRIBE:
         {
-            ZC_Printf("recv Moudle ZC_CODE_DESCRIBE data\n");
-            pstruRegister = (ZC_RegisterReq *)(pstrMsg + 1);
+            if ((g_struProtocolController.u8MainState >= PCT_STATE_ACCESS_NET) &&
+            (g_struProtocolController.u8MainState < PCT_STATE_DISCONNECT_CLOUD)
+            )
+            {
+                PCT_SendNotifyMsg(ZC_CODE_CLOUD_CONNECT);                
+                return;
+            }
+            else if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
+            {
+                PCT_SendNotifyMsg(ZC_CODE_CLOUD_DISCONNECT);                
+                return;
+            }
+            
+            pstruOpt = (ZC_MessageOptHead *)(pstrMsg + 1);
+            pstruRegister = (ZC_RegisterReq *)((u8*)(pstruOpt + 1) + ZC_HTONS(pstruOpt->OptLen));
             memcpy(g_struHfStaInfo.u8PrivateKey, pstruRegister->u8ModuleKey, ZC_MODULE_KEY_LEN);
-            memcpy(g_struHfStaInfo.u8DeviciId, (u8*)(pstruRegister+1)+sizeof(ZC_MessageOptHead), ZC_HS_DEVICE_ID_LEN);
+            memcpy(g_struHfStaInfo.u8DeviciId, (u8*)(pstruOpt+1), ZC_HS_DEVICE_ID_LEN);
             memcpy(g_struHfStaInfo.u8DeviciId + ZC_HS_DEVICE_ID_LEN, pstruRegister->u8Domain, ZC_DOMAIN_LEN);
             memcpy(g_struHfStaInfo.u8EqVersion, pstruRegister->u8EqVersion, ZC_EQVERSION_LEN);
+            
             g_struProtocolController.u8MainState = PCT_STATE_ACCESS_NET; 
             if (PCT_TIMER_INVAILD != g_struProtocolController.u8RegisterTimer)
             {
@@ -631,7 +642,7 @@ u32 HF_AssemblePkt(u8 *pu8Data, u32 u32DataLen)
             pstruMsg = (ZC_MessageHead *)(g_struUartBuffer.u8UartBuffer + sizeof(RCTRL_STRU_MSGHEAD));
             u32MsgLen = ZC_HTONS(pstruMsg->Payloadlen) + sizeof(ZC_MessageHead) + sizeof(RCTRL_STRU_MSGHEAD);
 
-            if (u32MsgLen > MSG_BUFFER_MAXLEN)
+            if (u32MsgLen > HF_MAX_UARTBUF_LEN)
             {
                 g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
                 g_struUartBuffer.u32RecvLen = 0;                
