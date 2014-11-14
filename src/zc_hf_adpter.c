@@ -287,6 +287,15 @@ u32 HF_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
             }
             break;
         }
+        case ZC_CODE_EQ_BEGIN:
+        {
+            PCT_SendNotifyMsg(ZC_CODE_EQ_DONE);
+            if (g_struProtocolController.u8MainState >= PCT_STATE_ACCESS_NET)
+            {
+                PCT_SendNotifyMsg(ZC_CODE_WIFI_CONNECT);
+            }
+            break;
+        } 
         case ZC_CODE_ZOTA_FILE_BEGIN:
             PCT_ModuleOtaFileBeginMsg(&g_struProtocolController, pstrMsg);
             break;
