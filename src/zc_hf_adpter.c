@@ -304,7 +304,9 @@ u32 HF_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
             break;
         case ZC_CODE_ZOTA_FILE_END:
             PCT_ModuleOtaFileEndMsg(&g_struProtocolController, pstrMsg);
-            break;  
+            break;
+        case ZC_CODE_REST:
+            break;
         default:
             PCT_HandleMoudleEvent(pu8Data, u16DataLen);
             break;
