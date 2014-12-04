@@ -187,6 +187,8 @@ void ZC_RecvDataFromClient(u32 ClientId, u8 *pu8Data, u32 u32DataLen)
     ZC_MessageOptHead struOpt;
     ZC_AppDirectMsg struAppDirectMsg;
     u16 u16Len;
+    
+    ZC_SendParam struParam;
 
     /*can hanle it*/
     u32RetVal = ZC_CheckClientIdle();
@@ -194,7 +196,8 @@ void ZC_RecvDataFromClient(u32 ClientId, u8 *pu8Data, u32 u32DataLen)
     {
         EVENT_BuildMsg(ZC_CODE_ERR, 0, g_u8MsgBuildBuffer, &u16Len, 
             NULL, 0);
-        g_struProtocolController.pstruMoudleFun->pfunSendToNet(ClientId, g_u8MsgBuildBuffer, u16Len);
+        struParam.u8NeedPoll = 0;            
+        g_struProtocolController.pstruMoudleFun->pfunSendToNet(ClientId, g_u8MsgBuildBuffer, u16Len, &struParam);
         return;            
     }
     

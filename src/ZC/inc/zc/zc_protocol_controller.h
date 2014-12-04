@@ -66,7 +66,13 @@ typedef struct
     u16 u16Port;
 }PTC_Connection;
 
-typedef void (*pFunSendNetData)(u32 u32Fd, u8 *pu8Data, u16 u16DataLen);
+typedef struct
+{
+    u8 u8NeedPoll;
+    u8 u8Pad[3];
+}ZC_SendParam;
+
+typedef void (*pFunSendNetData)(u32 u32Fd, u8 *pu8Data, u16 u16DataLen, ZC_SendParam *pstruParam);
 typedef u32 (*pFunFirmwareUpdate)(u8 *pu8FileData, u32 u32Offset, u32 u32DataLen);
 typedef u32 (*pFunFirmwareUpdateFinish)(u32 u32TotalLen);
 typedef u32 (*pFunSendDataToMoudle)(u8 *pu8Data, u16 u16DataLen);
@@ -139,6 +145,8 @@ typedef struct
     PTC_ModuleAdapter *pstruMoudleFun;      /*Communication With Cloud*/
     PTC_OtaInfo struOtaInfo;
 }PTC_ProtocolCon;
+
+
 
 extern PTC_ProtocolCon  g_struProtocolController;
 extern MSG_Buffer g_struRecvBuffer;

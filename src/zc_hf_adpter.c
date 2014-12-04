@@ -342,7 +342,7 @@ void HF_Rest(void)
 * Parameter: 
 * History:
 *************************************************/
-void HF_SendDataToNet(u32 u32Fd, u8 *pu8Data, u16 u16DataLen)
+void HF_SendDataToNet(u32 u32Fd, u8 *pu8Data, u16 u16DataLen, ZC_SendParam *pstruParam)
 {
     send(u32Fd, pu8Data, u16DataLen, 0);
 }

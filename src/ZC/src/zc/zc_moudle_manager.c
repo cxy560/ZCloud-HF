@@ -12,8 +12,9 @@
 #include <zc_protocol_controller.h>
 #include <zc_module_interface.h>
 extern u8 g_u8ClientSendLen;
+#ifndef MT7681
 extern ZC_UartBuffer g_struUartBuffer;
-
+#endif
 /*************************************************
 * Function: ZC_DealAppOpt
 * Description: 
@@ -29,6 +30,7 @@ u32 ZC_DealAppOpt(ZC_MessageHead *pstruMsg)
     u16 u16RealLen;
     ZC_MessageOptHead *pstruOpt;
     ZC_AppDirectMsg *pstruAppDirect;
+    ZC_SendParam struParam;
 
     u32Offset = sizeof(ZC_MessageHead);
     for (u32Index = 0; u32Index < pstruMsg->OptNum; u32Index++)
@@ -53,7 +55,9 @@ u32 ZC_DealAppOpt(ZC_MessageHead *pstruMsg)
 
             g_u8ClientSendLen = u16RealLen + sizeof(ZC_MessageHead);
 
-            g_struProtocolController.pstruMoudleFun->pfunSendToNet(ZC_HTONL(pstruAppDirect->u32AppClientId), g_u8MsgBuildBuffer, g_u8ClientSendLen);
+            struParam.u8NeedPoll = 1;
+
+            g_struProtocolController.pstruMoudleFun->pfunSendToNet(ZC_HTONL(pstruAppDirect->u32AppClientId), g_u8MsgBuildBuffer, g_u8ClientSendLen, &struParam);
 
             g_u8ClientSendLen = 0;
             return ZC_RET_OK;
@@ -153,7 +157,7 @@ u32 ZC_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
     return ZC_RET_OK;
 }
 
-
+#ifndef MT7681
 /*************************************************
 * Function: ZC_AssemblePkt
 * Description: 
@@ -340,7 +344,7 @@ void ZC_Moudlefunc(u8 *pu8Data, u32 u32DataLen)
     return; 
 }
 
-
+#endif
 /******************************* FILE END ***********************************/
 
 
