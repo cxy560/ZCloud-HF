@@ -112,7 +112,7 @@ u32 ZC_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
                 return ZC_RET_OK;
             }
             
-            g_struProtocolController.pstruMoudleFun->pfunStoreInfo((u8*)(pu8Data + 1), sizeof(ZC_RegisterReq));
+            g_struProtocolController.pstruMoudleFun->pfunStoreInfo((u8*)(pstrMsg + 1), sizeof(ZC_RegisterReq));
 
             g_struProtocolController.u8MainState = PCT_STATE_ACCESS_NET; 
             

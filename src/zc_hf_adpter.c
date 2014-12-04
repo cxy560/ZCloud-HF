@@ -359,7 +359,7 @@ u32 HF_StoreRegisterInfor(u8 *pu8Data, u16 u16DataLen)
 {
     ZC_RegisterReq *pstruRegister;
 
-    pstruRegister = (ZC_RegisterReq *)((u8*)(pu8Data + 1));
+    pstruRegister = (ZC_RegisterReq *)(pu8Data);
 
     memcpy(g_struHfStaInfo.u8PrivateKey, pstruRegister->u8ModuleKey, ZC_MODULE_KEY_LEN);
     memcpy(g_struHfStaInfo.u8DeviciId, pstruRegister->u8DeviceId, ZC_HS_DEVICE_ID_LEN);
@@ -553,7 +553,7 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     
     addr.sin_family = AF_INET;
     addr.sin_port = htons(ZC_CLOUD_PORT);
-    addr.sin_addr.s_addr=inet_addr("192.168.1.111");//42.62.41.75");
+    addr.sin_addr.s_addr=inet_addr("42.62.41.75");
     fd = socket(AF_INET, SOCK_STREAM, 0);
 
     ZC_Printf("0x%x\n", addr.sin_addr.s_addr);
