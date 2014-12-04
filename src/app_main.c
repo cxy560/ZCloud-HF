@@ -122,12 +122,11 @@ static int USER_FUNC socketb_recv_callback(uint32_t event,char *data,uint32_t le
 }
 
 #endif
+u32 g_u32GloablIp;
 void app_init(void)
 {
     u_printf("ex app_init \n");
     HF_Debug(DEBUG_LEVEL_USER,"app init\n");
-    //HF_Init();
-    //hfsmtlk_enable_recv_data_from_router(0);
 }
 
 static void show_reset_reason(void)
@@ -189,9 +188,8 @@ static int hfsys_event_callback( uint32_t event_id,void * param)
             break; 
         case HFE_DHCP_OK: 
         { 
-            uint32_t *p_ip; 
-            p_ip = (uint32_t*)param; 
-            u_printf("dhcp ok %08X!\n",*p_ip); 
+            g_u32GloablIp = *((uint32_t*)param); 
+            u_printf("dhcp ok %08X!\n",g_u32GloablIp); 
             HF_WakeUp();
         } 
             break; 
@@ -209,10 +207,8 @@ static int hfsys_event_callback( uint32_t event_id,void * param)
   
 static int USER_FUNC uart_recv_callback(uint32_t event,char *data,uint32_t len,uint32_t buf_len) 
 { 
-  HF_Debug(DEBUG_LEVEL_USER,"[%d]uart recv %d bytes data %d\n",event,len,buf_len); 
-
-  HF_Moudlefunc((u8*)data,len);
-  return len; 
+    ZC_Moudlefunc((u8*)data,len);
+    return len; 
 } 
 
 int USER_FUNC app_main (void)
@@ -236,6 +232,8 @@ int USER_FUNC app_main (void)
         msleep(50);
     }
     HF_Init();
+
+    HF_ReadDataFormFlash();
 
     hfsys_register_system_event( (hfsys_event_callback_t)hfsys_event_callback);
     

@@ -13,6 +13,7 @@
 
 #include <zc_common.h>
 #include <zc_protocol_controller.h>
+#include <zc_module_interface.h>
 
 typedef struct 
 {
@@ -21,8 +22,9 @@ typedef struct
 }HF_TimerInfo;
 
 
-#define HF_MAX_UARTBUF_LEN   (1000)
 #define HF_MAX_SOCKET_LEN    (1000)
+
+
 
 typedef struct 
 {
@@ -33,12 +35,7 @@ typedef struct
     u8  u8EqVersion[ZC_EQVERSION_LEN];
 }HF_StaInfo;
 
-typedef struct
-{
-    u32 u32Status;
-    u32 u32RecvLen;
-    u8  u8UartBuffer[HF_MAX_UARTBUF_LEN];
-}HF_UartBuffer;
+
 
 
 #define DEFAULT_IOT_CLOUD_KEY {\
@@ -99,7 +96,7 @@ extern "C" {
 void HF_Init(void);
 void HF_WakeUp(void);
 void HF_Sleep(void);
-void HF_Moudlefunc(u8 *pu8Data, u32 u32DataLen);
+void HF_ReadDataFormFlash(void);
 
 #ifdef __cplusplus
 }
