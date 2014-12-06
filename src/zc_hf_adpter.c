@@ -514,6 +514,12 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
             s32RecvLen = recvfrom(g_Bcfd, g_u8BcSendBuffer, 100, 0, (struct sockaddr *)&addr, (socklen_t*)&tmp); 
             if(s32RecvLen > 0) 
             {
+                
+                memset((char*)&addr,0,sizeof(addr));
+                addr.sin_family = AF_INET; 
+                addr.sin_port = htons(ZC_MOUDLE_BROADCAST_PORT); 
+                addr.sin_addr.s_addr=inet_addr("255.255.255.255"); 
+
                 struRsp.addr[0] = g_u32GloablIp & 0xff;
                 struRsp.addr[1] = (g_u32GloablIp >> 8) & 0xff;        
                 struRsp.addr[2] = (g_u32GloablIp >> 16) & 0xff;
