@@ -555,14 +555,12 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
         return ZC_RET_ERROR;
     }
     
-    ZC_Printf("0x%x\n", struIp.addr);
     
     addr.sin_family = AF_INET;
     addr.sin_port = htons(ZC_CLOUD_PORT);
     addr.sin_addr.s_addr=inet_addr("42.62.41.75");
     fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    ZC_Printf("0x%x\n", addr.sin_addr.s_addr);
     if(fd<0)
         return ZC_RET_ERROR;
     
