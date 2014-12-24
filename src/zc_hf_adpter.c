@@ -574,6 +574,27 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
         
     } 
 }
+/*************************************************
+* Function: HF_Rand
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void HF_Rand(u8 *pu8Rand)
+{
+    u32 u32Rand;
+    u32 u32Index; 
+    for (u32Index = 0; u32Index < 10; u32Index++)
+    {
+        u32Rand = rand();
+        pu8Rand[u32Index * 4] = ((u8)u32Rand % 26) + 65;
+        pu8Rand[u32Index * 4 + 1] = ((u8)(u32Rand >> 8) % 26) + 65;
+        pu8Rand[u32Index * 4 + 2] = ((u8)(u32Rand >> 16) % 26) + 65;
+        pu8Rand[u32Index * 4 + 3] = ((u8)(u32Rand >> 24) % 26) + 65;        
+    }
+}
 
 /*************************************************
 * Function: HF_ConnectToCloud
@@ -615,6 +636,9 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
 
     ZC_Printf("connect ok!\n");
     g_struProtocolController.struCloudConnection.u32Socket = fd;
+
+    
+    HF_Rand(g_struProtocolController.RandMsg);
 
     return ZC_RET_OK;
 }
