@@ -168,6 +168,7 @@ void HF_SendDataToCloud(PTC_Connection *pstruConnection)
     }
     
     u16DataLen = pstruBuf->u32Len; 
+
     send(pstruConnection->u32Socket, pstruBuf->u8MsgBuffer, u16DataLen, 0);
     ZC_Printf("send data len = %d\n", u16DataLen);
     pstruBuf->u8Status = MSG_BUFFER_IDLE;
@@ -622,7 +623,7 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     
     addr.sin_family = AF_INET;
     addr.sin_port = htons(ZC_CLOUD_PORT);
-    addr.sin_addr.s_addr=inet_addr("192.168.1.119");
+    addr.sin_addr.s_addr=inet_addr("192.168.1.126");
     fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(fd<0)
@@ -767,7 +768,6 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
     while(1) 
     {
         fd = g_struProtocolController.struCloudConnection.u32Socket;
-        hfthread_mutext_lock(g_struTimermutex);
         PCT_Run();
         
         if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
@@ -784,7 +784,6 @@ USER_FUNC static void HF_Cloudfunc(void* arg)
             HF_SendDataToCloud(&g_struProtocolController.struCloudConnection);
         }
         HF_SendBc();
-        hfthread_mutext_unlock(g_struTimermutex);
     } 
 }
 

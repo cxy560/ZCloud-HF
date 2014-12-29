@@ -186,7 +186,7 @@ u32 ZC_RecvDataFromMoudle(u8 *pu8Data, u16 u16DataLen)
 * Parameter: 
 * History:
 *************************************************/
-u32 ZC_AssemblePkt(u8 *pu8Data, u32 u32DataLen) 
+u32 ZC_AssemblePkt(u8 *pu8Data, u32 u32DataLen, u32 *pu32LeftLen) 
 {
     ZC_MessageHead *pstruMsg;
     u8 u8MagicHead[ZC_MAGIC_LEN] = {0x02,0x03,0x04,0x05};
@@ -195,6 +195,8 @@ u32 ZC_AssemblePkt(u8 *pu8Data, u32 u32DataLen)
     u32 u32MagicLen = ZC_MAGIC_LEN;
 
     u32HeadLen = u32MagicLen + sizeof(ZC_MessageHead);
+    *pu32LeftLen = 0;
+    
     if (MSG_BUFFER_FULL == g_struUartBuffer.u32Status)
     {
         return ZC_RET_ERROR;
@@ -233,6 +235,7 @@ u32 ZC_AssemblePkt(u8 *pu8Data, u32 u32DataLen)
                 memcpy(g_struUartBuffer.u8UartBuffer, pu8Data, u32MsgLen);
                 g_struUartBuffer.u32Status = MSG_BUFFER_FULL;
                 g_struUartBuffer.u32RecvLen = u32MsgLen;
+                *pu32LeftLen = u32DataLen - u32MsgLen;
             }
             else
             {
@@ -260,6 +263,7 @@ u32 ZC_AssemblePkt(u8 *pu8Data, u32 u32DataLen)
 
             g_struUartBuffer.u32Status = MSG_BUFFER_FULL;
             g_struUartBuffer.u32RecvLen = u32MsgLen;
+           *pu32LeftLen = u32DataLen + g_struUartBuffer.u32RecvLen - u32MsgLen;            
         }
         else
         {
@@ -313,7 +317,7 @@ u32 ZC_AssemblePkt(u8 *pu8Data, u32 u32DataLen)
                     u32MsgLen - g_struUartBuffer.u32RecvLen);
                 g_struUartBuffer.u32Status = MSG_BUFFER_FULL;
                 g_struUartBuffer.u32RecvLen = u32MsgLen;
-
+                *pu32LeftLen = u32DataLen + g_struUartBuffer.u32RecvLen - u32MsgLen;            
             }
             else
             {
@@ -345,8 +349,14 @@ void ZC_Moudlefunc(u8 *pu8Data, u32 u32DataLen)
 {
     u32 u32RetVal;
     u32 u32MagicLen = ZC_MAGIC_LEN;
+    u32 u32LeftLen = 0;
 
-    u32RetVal = ZC_AssemblePkt(pu8Data, u32DataLen);
+    if (0 == u32DataLen)
+    {
+        return;
+    }
+
+    u32RetVal = ZC_AssemblePkt(pu8Data, u32DataLen, &u32LeftLen);
 
     if (ZC_RET_ERROR == u32RetVal)
     {
@@ -359,6 +369,12 @@ void ZC_Moudlefunc(u8 *pu8Data, u32 u32DataLen)
             g_struUartBuffer.u32RecvLen - u32MagicLen);
         g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
         g_struUartBuffer.u32RecvLen = 0;
+    }
+
+    /*deal left data*/
+    if (u32LeftLen > 0)
+    {
+        ZC_Moudlefunc(pu8Data + (u32DataLen - u32LeftLen), u32LeftLen);
     }
 
     return; 
