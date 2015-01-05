@@ -27,8 +27,6 @@ MSG_Buffer g_struSendBuffer[MSG_BUFFER_SEND_MAX_NUM];
 MSG_Queue  g_struSendQueue;
 
 u8 g_u8MsgBuildBuffer[MSG_BULID_BUFFER_MAXLEN];
-u8 g_u8CiperBuffer[MSG_CIPER_BUFFER_MAXLEN];
-u8 g_u8ClientCiperBuffer[MSG_CIPER_BUFFER_MAXLEN];
 u8 g_u8ClientSendLen = 0;
 
 
@@ -187,14 +185,17 @@ void HF_RecvDataFromCloud(u8 *pu8Data, u32 u32DataLen)
 {
     u32 u32RetVal;
     u16 u16PlainLen;
-    u32RetVal = MSG_RecvDataFromCloud(pu8Data, u32DataLen);
+    u32RetVal = MSG_RecvData(&g_struRecvBuffer, pu8Data, u32DataLen);
 
     if (ZC_RET_OK == u32RetVal)
     {
         if (MSG_BUFFER_FULL == g_struRecvBuffer.u8Status)
         {
-            u32RetVal = SEC_Decrypt((ZC_SecHead*)g_u8CiperBuffer, 
-                g_u8CiperBuffer + sizeof(ZC_SecHead), g_struRecvBuffer.u8MsgBuffer, &u16PlainLen);
+            u32RetVal = SEC_Decrypt((ZC_SecHead*)g_struRecvBuffer.u8MsgBuffer, 
+                g_struRecvBuffer.u8MsgBuffer + sizeof(ZC_SecHead), g_u8MsgBuildBuffer, &u16PlainLen);
+
+            /*copy data*/
+            memcpy(g_struRecvBuffer.u8MsgBuffer, g_u8MsgBuildBuffer, u16PlainLen);
 
             g_struRecvBuffer.u32Len = u16PlainLen;
             if (ZC_RET_OK == u32RetVal)
