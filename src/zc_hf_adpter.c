@@ -38,7 +38,7 @@ HF_StaInfo g_struHfStaInfo = {
     DEFAULT_IOT_CLOUD_KEY,
     DEFAULT_IOT_PRIVATE_KEY,
     DEFAULT_DEVICIID,
-    "www.baidu.com"
+    "www.ablecloud.cn"
 };
 u8 g_u8recvbuffer[HF_MAX_SOCKET_LEN];
 ZC_UartBuffer g_struUartBuffer;
@@ -614,17 +614,17 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     int retval;
     
     memset((char*)&addr,0,sizeof(addr));
-    ZC_Printf("connect to cloud\n");
+    ZC_Printf("connect to cloud %s\n",g_struHfStaInfo.u8CloudAddr);
     retval = hfnet_gethostbyname((const char*)g_struHfStaInfo.u8CloudAddr, &struIp);
     if (HF_SUCCESS != retval)
     {
         return ZC_RET_ERROR;
     }
     
-    
+    ZC_Printf("connect ip = 0x%x!\n",struIp.addr);
     addr.sin_family = AF_INET;
     addr.sin_port = htons(ZC_CLOUD_PORT);
-    addr.sin_addr.s_addr=inet_addr("192.168.1.126");
+    addr.sin_addr.s_addr=struIp.addr;
     fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(fd<0)
