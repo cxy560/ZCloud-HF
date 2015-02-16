@@ -626,6 +626,31 @@ void HF_WakeUp()
 *************************************************/
 void HF_Sleep()
 {
+    u32 u32Index;
+    
+    close(g_Bcfd);
+
+    if (PCT_INVAILD_SOCKET != g_struProtocolController.struClientConnection.u32Socket)
+    {
+        close(g_struProtocolController.struClientConnection.u32Socket);
+        g_struProtocolController.struClientConnection.u32Socket = PCT_INVAILD_SOCKET;
+    }
+
+    if (PCT_INVAILD_SOCKET != g_struProtocolController.struCloudConnection.u32Socket)
+    {
+        close(g_struProtocolController.struCloudConnection.u32Socket);
+        g_struProtocolController.struCloudConnection.u32Socket = PCT_INVAILD_SOCKET;
+    }
+    
+    for (u32Index = 0; u32Index < ZC_MAX_CLIENT_NUM; u32Index++)
+    {
+        if (0 == g_struClientInfo.u32ClientVaildFlag[u32Index])
+        {
+            close(g_struClientInfo.u32ClientFd[u32Index]);
+            g_struClientInfo.u32ClientFd[u32Index] = PCT_INVAILD_SOCKET;
+        }
+    }
+
     PCT_Sleep();
     
     g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
