@@ -29,6 +29,7 @@
 #include <string.h>
 #include <time.h>
 #include <zc_hf_adpter.h>
+#include <zc_common.h>
 
 
 const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
@@ -122,7 +123,7 @@ static int USER_FUNC socketb_recv_callback(uint32_t event,char *data,uint32_t le
 }
 
 #endif
-u32 g_u32GloablIp;
+extern u32 g_u32GloablIp;
 void app_init(void)
 {
     u_printf("ex app_init \n");
@@ -189,7 +190,9 @@ static int hfsys_event_callback( uint32_t event_id,void * param)
         case HFE_DHCP_OK: 
         { 
             g_u32GloablIp = *((uint32_t*)param); 
+            g_u32GloablIp = ZC_HTONL(g_u32GloablIp);
             u_printf("dhcp ok %08X!\n",g_u32GloablIp); 
+            
             HF_WakeUp();
         } 
             break; 

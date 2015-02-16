@@ -11,6 +11,7 @@
 #define  __ZC_MOUDLE_CONFIG_H__
 
 #include <hsf.h>
+#include <string.h>
 #if ZC_DEBUG
 #ifdef ZC_OFF_LINETEST
 #define ZC_Printf(format, ...) printf("\1\2\3\4"format"File:%s, Line:%d, Function:%s\n", ##__VA_ARGS__, __FILE__, __LINE__ , __FUNCTION__)
