@@ -380,7 +380,7 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
                 }
                 else
                 {
-                    ZC_Printf("accept client = %d", connfd);
+                    ZC_Printf("accept client = %d\n", connfd);
                 }
             }
         }
