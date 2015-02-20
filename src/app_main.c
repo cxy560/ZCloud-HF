@@ -31,6 +31,7 @@
 #include <zc_hf_adpter.h>
 #include <zc_common.h>
 
+void HF_BcInit(void);
 
 const int hf_gpio_fid_to_pid_map_table[HFM_MAX_FUNC_CODE]=
 {
@@ -186,6 +187,7 @@ static int hfsys_event_callback( uint32_t event_id,void * param)
         case HFE_WIFI_STA_DISCONNECTED: 
             u_printf("wifi sta disconnected!!\n"); 
             HF_Sleep();
+            HF_BcInit();
             break; 
         case HFE_DHCP_OK: 
         { 

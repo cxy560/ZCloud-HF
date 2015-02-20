@@ -521,6 +521,8 @@ void HF_BcInit()
     hfnet_set_udp_broadcast_port_valid(ZC_MOUDLE_PORT, ZC_MOUDLE_PORT + 1);
 
     bind(g_Bcfd, (struct sockaddr*)&addr, sizeof(addr)); 
+    g_struProtocolController.u16SendBcNum = 0;
+
     memset((char*)&struRemoteAddr,0,sizeof(struRemoteAddr));
     struRemoteAddr.sin_family = AF_INET; 
     struRemoteAddr.sin_port = htons(ZC_MOUDLE_BROADCAST_PORT); 
