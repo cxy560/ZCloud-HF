@@ -53,7 +53,17 @@ struct sockaddr_in struRemoteAddr;
 void HF_ReadDataFormFlash(void) 
 {
     u32 u32MagicFlag = 0xFFFFFFFF;
-
+#ifdef __LPT200__
+    hffile_userbin_read(0, (char *)(&u32MagicFlag), 4);
+    if (ZC_MAGIC_FLAG == u32MagicFlag)
+    {   
+        hffile_userbin_read(0, (char *)(&g_struZcConfigDb), sizeof(ZC_ConfigDB));
+    }
+    else
+    {
+        ZC_Printf("no para, use default\n");
+    }
+#else
     hfuflash_read(0, (char *)(&u32MagicFlag), 4);
     if (ZC_MAGIC_FLAG == u32MagicFlag)
     {   
@@ -63,6 +73,7 @@ void HF_ReadDataFormFlash(void)
     {
         ZC_Printf("no para, use default\n");
     }
+#endif    
 
 }
 
@@ -76,8 +87,12 @@ void HF_ReadDataFormFlash(void)
 *************************************************/
 void HF_WriteDataToFlash(u8 *pu8Data, u16 u16Len)
 {
+#ifdef __LPT200__
+    hffile_userbin_write(0, (char*)pu8Data, u16Len);
+#else
     hfuflash_erase_page(0,1); 
     hfuflash_write(0, (char*)pu8Data, u16Len);
+#endif
 }
 
 /*************************************************
