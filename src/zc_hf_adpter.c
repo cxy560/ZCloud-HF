@@ -39,7 +39,7 @@ ZC_UartBuffer g_struUartBuffer;
 HF_TimerInfo g_struHfTimer[ZC_TIMER_MAX_NUM];
 hfthread_mutex_t g_struTimermutex;
 u8  g_u8BcSendBuffer[100];
-
+u32 g_u32BcSleepCount = 800;
 struct sockaddr_in struRemoteAddr;
 
 /*************************************************
@@ -427,19 +427,17 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     struct sockaddr_in addr;
     struct ip_addr struIp;
     int retval;
-    
+    u16 port;
     memset((char*)&addr,0,sizeof(addr));
-    if (1 == g_struZcConfigDb.struSwitchInfo.u32TestAddrConfig)
+    if (1 == g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig)
     {
-        retval = hfnet_gethostbyname((const char *)"test.ablecloud.cn", &struIp);
-    }
-    else if (2 == g_struZcConfigDb.struSwitchInfo.u32TestAddrConfig)
-    {
-        struIp.addr = g_struZcConfigDb.struSwitchInfo.u32ServerIp;
+        port = g_struZcConfigDb.struSwitchInfo.u16ServerPort;
+        struIp.addr = htonl(g_struZcConfigDb.struSwitchInfo.u32ServerIp);
         retval = HF_SUCCESS;
     }
     else
     {
+        port = ZC_CLOUD_PORT;
         retval = hfnet_gethostbyname((const char *)g_struZcConfigDb.struCloudInfo.u8CloudAddr, &struIp);
     }
 
@@ -451,7 +449,7 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     
     ZC_Printf("connect ip = 0x%x!\n",struIp.addr);
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(ZC_CLOUD_PORT);
+    addr.sin_port = htons(port);
     addr.sin_addr.s_addr=struIp.addr;
     fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -461,14 +459,20 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr))< 0)
     {
         close(fd);
+        if(g_struProtocolController.struCloudConnection.u32ConnectionTimes++>20)
+        {
+           g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig = 0;
+        }
+
         return ZC_RET_ERROR;
     }
+    g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
 
     ZC_Printf("connect ok!\n");
     g_struProtocolController.struCloudConnection.u32Socket = fd;
 
     
-  ZC_Rand(g_struProtocolController.RandMsg);
+    ZC_Rand(g_struProtocolController.RandMsg);
 
     return ZC_RET_OK;
 }
