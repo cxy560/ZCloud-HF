@@ -412,6 +412,24 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
         
     } 
 }
+/*************************************************
+* Function: HF_GetMac
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void HF_GetMac(u8 *pu8Mac)
+{
+    char rsp[64]={0};
+		char *mac[3]={0};
+		memset(rsp, 0, sizeof(rsp));
+		hfat_send_cmd("AT+WSMAC\r\n", sizeof("AT+WSMC\r\n"), rsp, 64);
+	  ZC_Printf("AT+WSMAC's response:%s\n",rsp);
+		hfat_get_words(rsp, mac, 3);
+    memcpy(pu8Mac,mac[1],ZC_SERVER_MAC_LEN);
+}
 
 /*************************************************
 * Function: HF_ConnectToCloud
@@ -477,7 +495,7 @@ u32 HF_ConnectToCloud(PTC_Connection *pstruConnection)
     return ZC_RET_OK;
 }
 /*************************************************
-* Function: HF_ConnectToCloud
+* Function: HF_ListenClient
 * Description: 
 * Author: cxy 
 * Returns: 
@@ -612,7 +630,7 @@ void HF_Init()
     g_struHfAdapter.pfunRest = HF_Rest;
     g_struHfAdapter.pfunWriteFlash = HF_WriteDataToFlash;
     g_struHfAdapter.pfunSendUdpData = HF_SendUdpData;   
-
+    g_struHfAdapter.pfunGetMac = HF_GetMac;
     
     g_u16TcpMss = 1000;
     PCT_Init(&g_struHfAdapter);
