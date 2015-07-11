@@ -423,11 +423,11 @@ USER_FUNC static void HF_CloudRecvfunc(void* arg)
 void HF_GetMac(u8 *pu8Mac)
 {
     char rsp[64]={0};
-		char *mac[3]={0};
-		memset(rsp, 0, sizeof(rsp));
-		hfat_send_cmd("AT+WSMAC\r\n", sizeof("AT+WSMC\r\n"), rsp, 64);
-	  ZC_Printf("AT+WSMAC's response:%s\n",rsp);
-		hfat_get_words(rsp, mac, 3);
+    char *mac[3]={0};
+    memset(rsp, 0, sizeof(rsp));
+    hfat_send_cmd("AT+WSMAC\r\n", sizeof("AT+WSMC\r\n"), rsp, 64);
+    ZC_Printf("AT+WSMAC's response:%s\n",rsp);
+    hfat_get_words(rsp, mac, 3);
     memcpy(pu8Mac,mac[1],ZC_SERVER_MAC_LEN);
 }
 
