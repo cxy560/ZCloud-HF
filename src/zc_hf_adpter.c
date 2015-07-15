@@ -432,6 +432,19 @@ void HF_GetMac(u8 *pu8Mac)
 }
 
 /*************************************************
+* Function: HF_Reboot
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void HF_Reboot(void)
+{
+    hfsys_reset();
+}
+
+/*************************************************
 * Function: HF_ConnectToCloud
 * Description: 
 * Author: cxy 
@@ -631,6 +644,7 @@ void HF_Init()
     g_struHfAdapter.pfunWriteFlash = HF_WriteDataToFlash;
     g_struHfAdapter.pfunSendUdpData = HF_SendUdpData;   
     g_struHfAdapter.pfunGetMac = HF_GetMac;
+    g_struHfAdapter.pfunReboot = HF_Reboot;
     
     g_u16TcpMss = 1000;
     PCT_Init(&g_struHfAdapter);
