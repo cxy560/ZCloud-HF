@@ -445,6 +445,7 @@ void HF_GetMac(u8 *pu8Mac)
 *************************************************/
 void HF_Reboot(void)
 {
+    msleep(500);
     hfsys_reset();
 }
 
